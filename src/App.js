@@ -9,6 +9,57 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 // 도메인이 달라도 쿠키를 공유하게 해줌
 axios.defaults.withCredentials = true;
 
+function Write() {
+  const navigation = useNavigate();
+
+  const { loginUser } = React.useContext(StoreContext);
+
+  const [data, setData] = React.useState({
+    title: "",
+    body: "",
+  });
+
+  const 데이터변경 = (event) => {
+    const name = event.target.name;
+    const cloneData = { ...data };
+    cloneData[name] = event.target.value;
+    setData(cloneData);
+  };
+
+  const 게시글작성 = async () => {
+    await axios({
+      url: "http://localhost:4000/article",
+      method: "POST",
+      data: data,
+    })
+      .then((res) => {
+        if (res.data.code === "success") {
+          alert(res.data.message);
+          navigation("/");
+        }
+      })
+      .catch(() => {});
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", padding: 12 }}>
+      <h2>게시글 작성</h2>
+      <h3>제목</h3>
+      <input name="title" type="text" onChange={데이터변경} />
+      <h3>내용</h3>
+      <textarea
+        name="body"
+        cols="50"
+        rows="10"
+        onChange={데이터변경}
+      ></textarea>
+      <button onClick={게시글작성} type="button" style={{ marginTop: 12 }}>
+        작성하기
+      </button>
+    </div>
+  );
+}
+
 function Join() {
   const navigation = useNavigate();
 
@@ -111,7 +162,57 @@ function Login() {
 }
 
 function Main() {
-  return <div>Main</div>;
+  const navigation = useNavigate();
+
+  const { loginUser } = React.useContext(StoreContext);
+
+  const [article, setArticle] = React.useState([]);
+
+  const 게시글정보 = async () => {
+    axios({
+      url: "http://localhost:4000/getArticle",
+      method: "GET",
+    })
+      .then((res) => {
+        setArticle(res.data);
+      })
+      .catch((e) => {
+        console.log("article Error", e);
+      });
+  };
+
+  React.useEffect(() => {
+    게시글정보();
+  }, []);
+
+  return (
+    <div>
+      <h2>{loginUser.nickname}님 안녕하세요!</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>번호</th>
+            <th>제목</th>
+            <th>내용</th>
+            <th>작성자</th>
+          </tr>
+        </thead>
+        <tbody>
+          {article.length > 0 &&
+            article.map((item) => {
+              return (
+                <tr key={item.seq}>
+                  <th>{item.seq}</th>
+                  <th>{item.title}</th>
+                  <th>{item.body}</th>
+                  <th>{item.user_seq}</th>
+                </tr>
+              );
+            })}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 /**
@@ -130,8 +231,6 @@ function App() {
       url: "http://localhost:4000/user",
     })
       .then((res) => {
-        console.log(res.data);
-
         setLoginUser(res.data);
       })
       .catch((e) => {
@@ -149,6 +248,7 @@ function App() {
         <Route exact path="/" element={<Main />} />
         <Route exact path="/login" element={<Login />} />
         <Route exact path="/join" element={<Join />} />
+        <Route exact path="/write" element={<Write />} />
       </Routes>
     </StoreContext.Provider>
   );
